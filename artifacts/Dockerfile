@@ -1,4 +1,5 @@
-FROM nginx@sha256:af296b188c7b7df99ba960ca614439c99cb7cf252ed7bbc23e90cfda59092305
+# Use Debian-based nginx image so apt-get works
+FROM nginx:1.23.3
 
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG container_user=mosip
