@@ -1,5 +1,5 @@
 # Use Debian-based nginx image so apt-get works
-FROM nginx:1.23.3
+FROM nginx@sha256:af296b188c7b7df99ba960ca614439c99cb7cf252ed7bbc23e90cfda59092305
 
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG container_user=mosip
@@ -15,14 +15,16 @@ ARG container_user_gid=1001
 
 # install packages and create user
 RUN apt-get update -y && \
-    apt-get install -y gnupg2 curl ca-certificates unzip zip openjdk-11-jdk && \
-    update-ca-certificates && \
+apt-get install -y gnupg2 && \
+apt-get update -y && \
+apt-get install -y --no-install-recommends unzip wget zip openjdk-11-jdk && \
     groupadd -g ${container_user_gid} ${container_user_group} && \
-    curl -L https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz -o apache-maven-3.8.8-bin.tar.gz && \
+rm -rf /var/lib/apt/lists/* &&\
+wget https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz &&\
     tar -xzf apache-maven-3.8.8-bin.tar.gz && mv apache-maven-3.8.8 /usr/local/maven && rm apache-maven-3.8.8-bin.tar.gz && \
-    useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user} && \
-    mkdir -p /var/run/nginx /var/tmp/nginx && \
-    chown -R ${container_user}:${container_user} /usr/share/nginx /var/run/nginx /var/tmp/nginx
+useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user} \
+&& mkdir -p /var/run/nginx /var/tmp/nginx \
+&& chown -R ${container_user}:${container_user} /usr/share/nginx /var/run/nginx /var/tmp/nginx
 
 COPY ./nginx.conf /etc/nginx/nginx.conf
 
@@ -47,11 +49,11 @@ ENV demosdk_zip_path=${base_path}/libs-release-local/demosdk/default/
 # environment variable for Biosdk lib Zip path
 ENV biosdk_lib_zip_path=${base_path}/libs-release-local/biosdk/
 
-# environment variable for Biosdk lib Zip path
-ENV jpegsdk_lib_zip_path=${base_path}/libs-release-local/jpeg-sdk/
-
 # environment variable for NeuroTech-Biosdk lib Zip path
 ENV neurotech_biosdk_lib_zip_path=${base_path}/libs-release-local/neurotech/
+
+# environment variable for Biosdk lib Zip path
+ENV jpegsdk_lib_zip_path=${base_path}/libs-release-local/jpeg-sdk/
 
 # environment variable for Cache Provider Jar path
 ENV cache_path=${base_path}/libs-release-local/cache
@@ -119,41 +121,18 @@ ENV version=1.2.1-SNAPSHOT
 ENV idp_auth_wrapper_version=0.0.1-SNAPSHOT
 
 # Create all the jar, i18n & theme paths.
-RUN mkdir -p ${biosdk_client_zip_path}/biosdk-client \
-    ${demosdk_zip_path}/demosdk \
-    ${biosdk_lib_zip_path}/biosdk-lib \
-    ${cache_path} \
-    ${ida_sh_path} \
-    ${hsm_client_path} \
-    ${mosip_plugins_zip_path} \
-    ${kernel_jar_path} \
-    ${test_jar_path} \
-    ${idobject_jar_path} \
-    ${regproc_jar_path} \
-    ${sdk_path} \
-    ${image_compressor_path}/image-compressor \
-    ${icu4j_jar_path} \
-    ${clamav_path} \
-    ${i18n_zip_path} \
-    ${theme_zip_path} \
-    ${child_auth_filter_jar_path} \
-    ${base_path}/libs-release-local/reg-client \
-    ${scripts_path} \
-    ${master_template_path} \
-    ${jpeg_sdk_path} \
-    ${jpegsdk_lib_zip_path}/jpeg-sdk-lib/ \
-    ${idp_auth_wrapper_lib_zip_path} \
-    ${esignet_wrapper_lib_zip_path}/esignet-wrapper \
-    ${neurotech_biosdk_lib_zip_path}/windows-sdk
+RUN mkdir -p ${biosdk_client_zip_path}/biosdk-client ${demosdk_zip_path}/demosdk ${biosdk_lib_zip_path}/biosdk-lib ${cache_path} ${ida_sh_path} ${hsm_client_path} ${mosip_plugins_zip_path} ${kernel_jar_path} ${test_jar_path} ${idobject_jar_path} ${regproc_jar_path} ${sdk_path} ${image_compressor_path}/image-compressor ${icu4j_jar_path} ${clamav_path} ${i18n_zip_path} ${theme_zip_path} ${child_auth_filter_jar_path} ${base_path}/libs-release-local/reg-client ${scripts_path} ${master_template_path} ${jpeg_sdk_path} ${jpegsdk_lib_zip_path}/jpeg-sdk-lib/ ${idp_auth_wrapper_lib_zip_path} ${esignet_wrapper_lib_zip_path}/esignet-wrapper ${neurotech_biosdk_lib_zip_path}/windows-sdk
 
 # Copy all the respective jars to the location
 
 COPY /src/sdk/biosdk/install.sh ${biosdk_client_zip_path}/biosdk-client/
 
+copy src/sdk/neuroTech-bioSdk/sdk-dependency-neurotech.zip ${neurotech_biosdk_lib_zip_path}/windows-sdk/
+
 COPY /src/sdk/demosdk/install.sh ${demosdk_zip_path}/demosdk/
 
 COPY /src/deployment/docker/id-authentication/* ${ida_sh_path}/
-COPY src/sdk/neuroTech-bioSdk/sdk-dependency-neurotech.zip ${neurotech_biosdk_lib_zip_path}/windows-sdk/
+
 COPY /src/hsm/client.zip ${hsm_client_path}/
 
 COPY /src/mosip-plugins/sign-in-with-esignet/sign-in-with-esignet.zip ${mosip_plugins_zip_path}/
