@@ -1,5 +1,5 @@
 # Use Debian-based nginx image so apt-get works
-FROM nginx@sha256:af296b188c7b7df99ba960ca614439c99cb7cf252ed7bbc23e90cfda59092305
+FROM nginx:1.25.3-bullseye
 
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG container_user=mosip
@@ -20,7 +20,7 @@ RUN apt-get update -y && \
         unzip \
         wget \
         zip \
-        openjdk-11-jdk \
+        openjdk-11-jre-headless \
         ca-certificates && \
     groupadd -g ${container_user_gid} ${container_user_group} && \
 wget https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz &&\
