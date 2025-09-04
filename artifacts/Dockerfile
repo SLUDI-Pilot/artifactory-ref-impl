@@ -13,28 +13,33 @@ ARG container_user_uid=1001
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG container_user_gid=1001
 
-# install packages, nginx, maven, and create user
-RUN set -eux; \
-    apt-get update -y; \
+# install packages, nginx, java, maven and create user
+RUN apt-get update --fix-missing -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         nginx \
         gnupg \
         unzip \
         wget \
         zip \
-        maven \
-        ca-certificates; \
-    update-ca-certificates; \
-    groupadd -g "${container_user_gid}" "${container_user_group}" || true; \
-    useradd -u "${container_user_uid}" -g "${container_user_group}" -s /bin/sh -m "${container_user}" || true; \
-    mkdir -p /var/run/nginx /var/tmp/nginx; \
-    chown -R "${container_user}:${container_user}" /usr/share/nginx /var/run/nginx /var/tmp/nginx; \
+        default-jre \
+        ca-certificates && \
+    groupadd -g ${container_user_gid} ${container_user_group} && \
+    wget https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz && \
+    tar -xzf apache-maven-3.8.8-bin.tar.gz && \
+    mv apache-maven-3.8.8 /usr/local/maven && \
+    rm apache-maven-3.8.8-bin.tar.gz && \
+    useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user} && \
+    mkdir -p /var/run/nginx /var/tmp/nginx && \
+    chown -R ${container_user}:${container_user} /usr/share/nginx /var/run/nginx /var/tmp/nginx && \
     rm -rf /var/lib/apt/lists/*
+
+# Redirect nginx logs to Docker stdout/stderr
+RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
+    ln -sf /dev/stderr /var/log/nginx/error.log
 
 COPY ./nginx.conf /etc/nginx/nginx.conf
 
-# Maven from apt lives at /usr/share/maven
-ENV MAVEN_HOME=/usr/share/maven
+ENV MAVEN_HOME=/usr/local/maven
 ENV PATH=$MAVEN_HOME/bin:$PATH
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
@@ -189,7 +194,7 @@ COPY ./configure.sh ${work_dir}/
 
 COPY pom.xml ${work_dir}/
 
-RUN cd ${work_dir} && mvn -B dependency:resolve && mvn -B clean install
+RUN cd ${work_dir} && mvn dependency:resolve && mvn clean install
 RUN bash configure.sh
 
 # update nginx port to 8080
