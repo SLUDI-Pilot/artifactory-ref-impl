@@ -53,12 +53,15 @@ RUN set -eux; \
 # Download & install Maven using curl with retries (writes to /usr/local/maven)
 RUN set -eux; \
     MAVEN_TGZ_URL="https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"; \
+    MAVEN_TGZ_URL_FALLBACK="https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"; \
     TMP_TGZ="/tmp/apache-maven-${MAVEN_VERSION}.tar.gz"; \
     # retry loop for transient network failures
     i=0; \
     until [ $i -ge 5 ]; do \
         curl -fSL --retry 3 --retry-delay 5 -o "${TMP_TGZ}" "${MAVEN_TGZ_URL}" && break; \
-        i=$((i+1)); sleep 2; \
+        echo "Primary Maven URL failed, trying fallback..."; \
+        curl -fSL --retry 3 --retry-delay 5 -o "${TMP_TGZ}" "${MAVEN_TGZ_URL_FALLBACK}" && break; \
+        i=$((i+1)); sleep 5; \
     done; \
     [ -f "${TMP_TGZ}" ]; \
     tar -xzf "${TMP_TGZ}" -C /usr/local; \
