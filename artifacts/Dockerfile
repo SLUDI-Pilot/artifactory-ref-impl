@@ -14,14 +14,14 @@ ARG container_user_uid=1001
 ARG container_user_gid=1001
 
 # install packages, nginx, java, maven and create user
-RUN apt-get update -y && \
+RUN apt-get update --fix-missing -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         nginx \
         gnupg \
         unzip \
         wget \
         zip \
-        openjdk-11-jre-headless \
+        default-jre \
         ca-certificates && \
     groupadd -g ${container_user_gid} ${container_user_group} && \
 wget https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bin.tar.gz &&\
