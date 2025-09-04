@@ -1,5 +1,5 @@
-# Use Debian-based nginx image so apt-get works
-FROM nginx:1.25.3-bullseye
+# Use Debian-based base image instead of non-existent nginx:1.25.3-bullseye
+FROM debian:bullseye-slim
 
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG container_user=mosip
@@ -13,9 +13,10 @@ ARG container_user_uid=1001
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG container_user_gid=1001
 
-# install packages and create user
+# install packages, nginx, java, maven and create user
 RUN apt-get update -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        nginx \
         gnupg \
         unzip \
         wget \
@@ -34,9 +35,9 @@ wget https://dlcdn.apache.org/maven/maven-3/3.8.8/binaries/apache-maven-3.8.8-bi
 
 COPY ./nginx.conf /etc/nginx/nginx.conf
 
-ENV MAVEN_HOME /usr/local/maven
-ENV PATH $MAVEN_HOME/bin:$PATH
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+ENV MAVEN_HOME=/usr/local/maven
+ENV PATH=$MAVEN_HOME/bin:$PATH
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
 # set working directory for the user
 WORKDIR /home/${container_user}
@@ -126,8 +127,16 @@ ENV scripts_path=/home/mosip/scripts
 ENV version=1.2.1-SNAPSHOT
 ENV idp_auth_wrapper_version=0.0.1-SNAPSHOT
 
-# Create all the jar, i18n & theme paths.
-RUN mkdir -p ${biosdk_client_zip_path}/biosdk-client ${demosdk_zip_path}/demosdk ${biosdk_lib_zip_path}/biosdk-lib ${cache_path} ${ida_sh_path} ${hsm_client_path} ${mosip_plugins_zip_path} ${kernel_jar_path} ${test_jar_path} ${idobject_jar_path} ${regproc_jar_path} ${sdk_path} ${image_compressor_path}/image-compressor ${icu4j_jar_path} ${clamav_path} ${i18n_zip_path} ${theme_zip_path} ${child_auth_filter_jar_path} ${base_path}/libs-release-local/reg-client ${scripts_path} ${master_template_path} ${jpeg_sdk_path} ${jpegsdk_lib_zip_path}/jpeg-sdk-lib/ ${idp_auth_wrapper_lib_zip_path} ${esignet_wrapper_lib_zip_path}/esignet-wrapper ${neurotech_biosdk_lib_zip_path}/windows-sdk
+# Create required directories
+RUN mkdir -p ${biosdk_client_zip_path}/biosdk-client ${demosdk_zip_path}/demosdk \
+    ${biosdk_lib_zip_path}/biosdk-lib ${cache_path} ${ida_sh_path} ${hsm_client_path} \
+    ${mosip_plugins_zip_path} ${kernel_jar_path} ${test_jar_path} ${idobject_jar_path} \
+    ${regproc_jar_path} ${sdk_path} ${image_compressor_path}/image-compressor \
+    ${icu4j_jar_path} ${clamav_path} ${i18n_zip_path} ${theme_zip_path} \
+    ${child_auth_filter_jar_path} ${base_path}/libs-release-local/reg-client \
+    ${scripts_path} ${master_template_path} ${jpeg_sdk_path} ${jpegsdk_lib_zip_path}/jpeg-sdk-lib/ \
+    ${idp_auth_wrapper_lib_zip_path} ${esignet_wrapper_lib_zip_path}/esignet-wrapper \
+    ${neurotech_biosdk_lib_zip_path}/windows-sdk
 
 # Copy all the respective jars to the location
 
@@ -185,7 +194,8 @@ RUN cd ${work_dir} && mvn dependency:resolve && mvn clean install
 
 RUN bash configure.sh
 
-RUN sed -i -e '/listen/!b' -e '/80;/!b' -e 's/80;/8080;/' /etc/nginx/conf.d/default.conf
+# update nginx port to 8080
+RUN sed -i -e '/listen/!b' -e '/80;/!b' -e 's/80;/8080;/' /etc/nginx/sites-enabled/default
 
 # select container user for all tasks
 USER ${container_user_uid}:${container_user_gid}
