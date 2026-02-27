@@ -110,6 +110,9 @@ ENV clamav_path=${base_path}/libs-release-local/clamav
 
 ENV regclient_jar_path=${base_path}/libs-release-local
 
+# environment variable for custom-impl jar path
+ENV custom_zip_path=${base_path}/libs-release-local/impl
+
 ENV master_template_path=${base_path}/libs-release-local/master-templates
 
 # environment variable for child auth filter jar path
@@ -176,6 +179,8 @@ COPY /src/jre/zulu11.41.23-ca-fx-jre11.0.8-win_x64.zip ${regclient_jar_path}/zul
 COPY /src/icu4j/* ${icu4j_jar_path}/
 
 COPY /src/auth/* ${regproc_jar_path}/
+
+COPY /src/impl/* ${custom_zip_path}/
 
 COPY ./configure.sh ${work_dir}/
 
